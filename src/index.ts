@@ -24,7 +24,7 @@ function info(): InfoResponse {
 
   return {
     apiversion: "1",
-    author: "germansupersnake", // TODO: Your Battlesnake Username
+    author: "GermanSuperSnake", // TODO: Your Battlesnake Username
     color: "#fc3d03", // TODO: Choose color
     head: "replit-mark", // TODO: Choose head
     tail: "weight", // TODO: Choose tail

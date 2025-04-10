@@ -19,6 +19,8 @@ export class BasicStrategy implements Strategy {
       const isSelfCollision = gameState.you.body.some(
         (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
       );
+
+      // Check for collisions with other snakes
       const otherSnake = gameState.board.snakes.find((snake) => {
         return (
           snake.body[0].x === nextCoord.x && snake.body[0].y === nextCoord.y
@@ -28,13 +30,14 @@ export class BasicStrategy implements Strategy {
       let outcome = Outcome.ALIVE;
       let collisionPenalty = 0;
 
+      // Check for out of bounds or self-collision
       if (isOutOfBounds || isSelfCollision) {
         outcome = Outcome.DEAD;
       } else if (otherSnake) {
         // Avoid moving into another snake's head
         collisionPenalty = 5; // High penalty for moving into another snake's head
         if (otherSnake.length >= gameState.you.body.length) {
-          outcome = Outcome.DEAD;
+          outcome = Outcome.DEAD; // Cannot move into a longer snake's head
         }
       }
 
@@ -53,10 +56,10 @@ export class BasicStrategy implements Strategy {
         distanceToFood: this.getClosestFoodDistance(
           nextCoord,
           gameState.board.food
-        ), // Add distance to food
+        ),
         canTouchHead: otherSnake
           ? gameState.you.body.length > otherSnake.length
-          : false, // Check if can touch competitor's head
+          : false, // Ensure it's a boolean
       };
     });
 
