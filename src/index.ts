@@ -10,9 +10,9 @@
 // To get you started we've included code to prevent your Battlesnake from moving backwards.
 // For more info see docs.battlesnake.com
 
-import runServer from './server/server';
-import { BasicStrategy } from './strategy/BasicStrategy';
-import { GameState, InfoResponse, MoveResponse } from './types/types';
+import runServer from "./server/server";
+import { BasicStrategy } from "./strategy/BasicStrategy";
+import { GameState, InfoResponse, MoveResponse } from "./types/types";
 
 const allroundStrategy = new BasicStrategy();
 
@@ -24,10 +24,10 @@ function info(): InfoResponse {
 
   return {
     apiversion: "1",
-    author: "",       // TODO: Your Battlesnake Username
-    color: "#888888", // TODO: Choose color
-    head: "default",  // TODO: Choose head
-    tail: "default",  // TODO: Choose tail
+    author: "germansupersnake", // TODO: Your Battlesnake Username
+    color: "#fc3d03", // TODO: Choose color
+    head: "replit-mark", // TODO: Choose head
+    tail: "weight", // TODO: Choose tail
   };
 }
 
@@ -52,5 +52,5 @@ runServer({
   info: info,
   start: start,
   move: move,
-  end: end
+  end: end,
 });
