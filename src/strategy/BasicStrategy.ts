@@ -1,7 +1,12 @@
 import { coordInDirection, isOutside } from "../functions/BoardFunctions";
 import { Direction, Outcome } from "../types/strategy";
-import { Coordinate, DirectionResult, Strategy } from "../types/strategyTypes";
+import { DirectionResult, Strategy } from "../types/strategyTypes";
 import { GameState, MoveResponse } from "../types/types";
+
+interface Coordinate {
+  x: number;
+  y: number;
+}
 
 export class BasicStrategy implements Strategy {
   private healthThreshold: number = 30; // Adjust this value as needed
@@ -46,20 +51,40 @@ export class BasicStrategy implements Strategy {
         };
       }
 
-      // Check for collisions with any other snake's body
-      const collisionWithOtherSnake = gameState.board.snakes.some((snake) => {
-        return snake.body.some(
-          (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
-        );
+      // Check for collision with other snakes' heads
+      const otherSnake = gameState.board.snakes.find((snake) => {
+        return (
+          snake.body[0].x === nextCoord.x && snake.body[0].y === nextCoord.y
+        ); // Check for head
       });
 
       let outcome = Outcome.ALIVE;
       let collisionPenalty = 0;
 
-      // If colliding with another snake, set the outcome accordingly
-      if (collisionWithOtherSnake) {
-        collisionPenalty = 5; // High penalty for moving into another snake's body
-        outcome = Outcome.DEAD; // If it collides, set outcome to DEAD
+      // Handle collision with competitor's head
+      if (otherSnake) {
+        if (gameState.you.body.length > otherSnake.length) {
+          // Only allow touching the head if the snake is longer
+          collisionPenalty = 0; // No penalty for eating
+        } else {
+          outcome = Outcome.DEAD; // Cannot move into a longer snake's head
+        }
+      }
+
+      // Check for collision with any segment of other snakes' bodies
+      const collisionWithOtherSnakeBody = gameState.board.snakes.some(
+        (snake) => {
+          return snake.body
+            .slice(1)
+            .some(
+              (segment) =>
+                segment.x === nextCoord.x && segment.y === nextCoord.y
+            ); // Check body segments
+        }
+      );
+
+      if (collisionWithOtherSnakeBody) {
+        outcome = Outcome.DEAD; // Cannot move into another snake's body
       }
 
       // Check for food consumption
@@ -78,15 +103,9 @@ export class BasicStrategy implements Strategy {
           nextCoord,
           gameState.board.food
         ),
-        canTouchHead:
-          collisionWithOtherSnake &&
-          gameState.you.body.length >
-            gameState.board.snakes.find((snake) => {
-              return (
-                snake.body[0].x === nextCoord.x &&
-                snake.body[0].y === nextCoord.y
-              );
-            })!.length,
+        canTouchHead: otherSnake
+          ? gameState.you.body.length > otherSnake.length
+          : false, // Ensure it's a boolean
       };
     });
 
