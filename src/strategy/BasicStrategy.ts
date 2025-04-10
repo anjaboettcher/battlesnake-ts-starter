@@ -20,25 +20,20 @@ export class BasicStrategy implements Strategy {
         (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
       );
 
-      // Check for collisions with other snakes
-      const otherSnake = gameState.board.snakes.find((snake) => {
-        return (
-          snake.body[0].x === nextCoord.x && snake.body[0].y === nextCoord.y
+      // Check for collisions with any other snake's body
+      const collisionWithOtherSnake = gameState.board.snakes.some((snake) => {
+        // Check if the next coordinate matches any segment of the other snake's body
+        return snake.body.some(
+          (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
         );
       });
 
       let outcome = Outcome.ALIVE;
       let collisionPenalty = 0;
 
-      // Check for out of bounds or self-collision
-      if (isOutOfBounds || isSelfCollision) {
+      // Check for out of bounds, self-collision, or collision with other snakes
+      if (isOutOfBounds || isSelfCollision || collisionWithOtherSnake) {
         outcome = Outcome.DEAD;
-      } else if (otherSnake) {
-        // Avoid moving into another snake's head
-        collisionPenalty = 5; // High penalty for moving into another snake's head
-        if (otherSnake.length >= gameState.you.body.length) {
-          outcome = Outcome.DEAD; // Cannot move into a longer snake's head
-        }
       }
 
       // Check for food consumption
@@ -57,9 +52,15 @@ export class BasicStrategy implements Strategy {
           nextCoord,
           gameState.board.food
         ),
-        canTouchHead: otherSnake
-          ? gameState.you.body.length > otherSnake.length
-          : false, // Ensure it's a boolean
+        canTouchHead:
+          collisionWithOtherSnake &&
+          gameState.you.body.length >
+            gameState.board.snakes.find((snake) => {
+              return (
+                snake.body[0].x === nextCoord.x &&
+                snake.body[0].y === nextCoord.y
+              );
+            })!.length, // Ensure it's a boolean
       };
     });
 
