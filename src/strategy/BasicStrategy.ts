@@ -4,39 +4,83 @@ import { DirectionResult, Strategy } from "../types/strategyTypes";
 import { GameState, MoveResponse } from "../types/types";
 
 export class BasicStrategy implements Strategy {
+  // Define a health threshold
+  private healthThreshold: number = 30; // Adjust this value as needed
 
   nextMove(gameState: GameState): MoveResponse {
     const head = gameState.you.body[0];
+    const health = gameState.you.health;
 
-    // Loop over all possible direction and evualtate it
-    const directionResults: Array<DirectionResult> = Object.values(Direction).map((direction: Direction) => {
+    // Evaluate all possible directions
+    const directionResults: Array<DirectionResult> = Object.values(
+      Direction
+    ).map((direction: Direction) => {
       const nextCoord = coordInDirection(head, direction);
-      const isOutofBounds = isOutside(nextCoord, gameState.board);
-      // Check that you don't collide with any snake
-      // Add more checks if needed
-      
-      let outcome = Outcome.ALIVE
-      if (isOutofBounds) {
-        outcome = Outcome.DEAD
+      const isOutOfBounds = isOutside(nextCoord, gameState.board);
+      const isSelfCollision = gameState.you.body.some(
+        (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
+      );
+      const otherSnake = gameState.board.snakes.find((snake) => {
+        return (
+          snake.body[0].x === nextCoord.x && snake.body[0].y === nextCoord.y
+        );
+      });
+
+      let outcome = Outcome.ALIVE;
+
+      if (isOutOfBounds || isSelfCollision) {
+        outcome = Outcome.DEAD;
+      } else if (otherSnake) {
+        // Handle head-to-head collision
+        if (otherSnake.length >= gameState.you.body.length) {
+          outcome = Outcome.DEAD;
+        }
       }
 
-      // Collect data to use for sorting
+      // Check for food consumption
+      const isFood = gameState.board.food.some(
+        (food) => food.x === nextCoord.x && food.y === nextCoord.y
+      );
+      const healthAfterMove = isFood ? health : health - 1; // If eating food, health doesn't decrease
 
-      return { direction, outcome, otherData: 0 };
+      return {
+        direction,
+        outcome,
+        otherData: isFood ? 2 : 0, // Higher weight for food
+        healthAfterMove,
+      };
     });
 
-    // Filter out all safe moves
-    const safeMoves = directionResults.filter(({ direction, outcome }) => outcome == Outcome.ALIVE)
-    if (safeMoves.length == 0) {
-      console.log(`MOVE ${gameState.turn}: No safe moves detected! Moving down`);
+    // Filter for safe moves
+    const safeMoves = directionResults.filter(
+      ({ outcome }) => outcome === Outcome.ALIVE
+    );
+
+    // Check if there are no safe moves
+    if (safeMoves.length === 0) {
+      console.log(
+        `MOVE ${gameState.turn}: No safe moves detected! Moving down`
+      );
       return { move: "down" };
     }
 
-    // Sort you safe moves any way you like
-    const nextMove = safeMoves.sort((a, b) => b.otherData - a.otherData)[0];
+    // Sort safe moves, prioritizing food and health
+    const nextMove = safeMoves.sort((a, b) => {
+      // Adjust food weighting based on health threshold
+      const foodWeightA =
+        health < this.healthThreshold ? a.otherData + 1 : a.otherData; // Increase weight if health is low
+      const foodWeightB =
+        health < this.healthThreshold ? b.otherData + 1 : b.otherData;
 
-    console.log(`MOVE ${gameState.turn}: ${nextMove.direction}`)
-    return { move: nextMove.direction.toLocaleLowerCase() };
+      // Prioritize food first
+      if (foodWeightB !== foodWeightA) {
+        return foodWeightB - foodWeightA;
+      }
+      // Then prioritize health
+      return b.healthAfterMove - a.healthAfterMove;
+    })[0];
 
+    console.log(`MOVE ${gameState.turn}: ${nextMove.direction}`);
+    return { move: nextMove.direction.toLowerCase() };
   }
 }
