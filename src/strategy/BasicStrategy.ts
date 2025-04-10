@@ -1,15 +1,10 @@
 import { coordInDirection, isOutside } from "../functions/BoardFunctions";
 import { Direction, Outcome } from "../types/strategy";
-import { DirectionResult, Strategy } from "../types/strategyTypes";
+import { Coordinate, DirectionResult, Strategy } from "../types/strategyTypes";
 import { GameState, MoveResponse } from "../types/types";
 
-interface Coordinate {
-  x: number;
-  y: number;
-}
-
 export class BasicStrategy implements Strategy {
-  private healthThreshold: number = 30; // Adjust this value as needed
+  private healthThreshold: number = 30; // Health threshold for prioritizing food
 
   nextMove(gameState: GameState): MoveResponse {
     const head = gameState.you.body[0];
@@ -79,7 +74,7 @@ export class BasicStrategy implements Strategy {
             .some(
               (segment) =>
                 segment.x === nextCoord.x && segment.y === nextCoord.y
-            ); // Check body segments
+            ); // Avoid body segments
         }
       );
 
@@ -119,7 +114,7 @@ export class BasicStrategy implements Strategy {
       console.log(
         `MOVE ${gameState.turn}: No safe moves detected! Moving down`
       );
-      return { move: "down" };
+      return { move: "down" }; // Default move if no safe options
     }
 
     // Sort safe moves, prioritizing food and avoiding collisions
