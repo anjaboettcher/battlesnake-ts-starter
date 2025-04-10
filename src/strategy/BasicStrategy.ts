@@ -1,6 +1,6 @@
 import { coordInDirection, isOutside } from "../functions/BoardFunctions";
 import { Direction, Outcome } from "../types/strategy";
-import { DirectionResult, Strategy } from "../types/strategyTypes";
+import { Coordinate, DirectionResult, Strategy } from "../types/strategyTypes";
 import { GameState, MoveResponse } from "../types/types";
 
 export class BasicStrategy implements Strategy {
