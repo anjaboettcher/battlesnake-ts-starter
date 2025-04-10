@@ -15,14 +15,39 @@ export class BasicStrategy implements Strategy {
       Direction
     ).map((direction: Direction) => {
       const nextCoord = coordInDirection(head, direction);
+
+      // Check if the next coordinate is out of bounds
       const isOutOfBounds = isOutside(nextCoord, gameState.board);
+      if (isOutOfBounds) {
+        return {
+          direction,
+          outcome: Outcome.DEAD,
+          otherData: 0,
+          healthAfterMove: health,
+          collisionPenalty: 0,
+          distanceToFood: Infinity,
+          canTouchHead: false,
+        };
+      }
+
+      // Check for self-collision
       const isSelfCollision = gameState.you.body.some(
         (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
       );
+      if (isSelfCollision) {
+        return {
+          direction,
+          outcome: Outcome.DEAD,
+          otherData: 0,
+          healthAfterMove: health,
+          collisionPenalty: 0,
+          distanceToFood: Infinity,
+          canTouchHead: false,
+        };
+      }
 
       // Check for collisions with any other snake's body
       const collisionWithOtherSnake = gameState.board.snakes.some((snake) => {
-        // Check if the next coordinate matches any segment of the other snake's body
         return snake.body.some(
           (segment) => segment.x === nextCoord.x && segment.y === nextCoord.y
         );
@@ -31,9 +56,10 @@ export class BasicStrategy implements Strategy {
       let outcome = Outcome.ALIVE;
       let collisionPenalty = 0;
 
-      // Check for out of bounds or self-collision or collision with other snakes
-      if (isOutOfBounds || isSelfCollision || collisionWithOtherSnake) {
-        outcome = Outcome.DEAD;
+      // If colliding with another snake, set the outcome accordingly
+      if (collisionWithOtherSnake) {
+        collisionPenalty = 5; // High penalty for moving into another snake's body
+        outcome = Outcome.DEAD; // If it collides, set outcome to DEAD
       }
 
       // Check for food consumption
@@ -60,7 +86,7 @@ export class BasicStrategy implements Strategy {
                 snake.body[0].x === nextCoord.x &&
                 snake.body[0].y === nextCoord.y
               );
-            })!.length, // Ensure it's a boolean
+            })!.length,
       };
     });
 
