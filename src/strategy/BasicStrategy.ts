@@ -99,7 +99,7 @@ export class BasicStrategy implements Strategy {
           gameState.board.food
         ),
         canTouchHead: otherSnake
-          ? gameState.you.body.length > otherSnake.length
+          ? gameState.you.body.length > otherSnake.body.length
           : false, // Ensure it's a boolean
       };
     });
