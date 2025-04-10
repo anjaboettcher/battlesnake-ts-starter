@@ -58,14 +58,14 @@ export class BasicStrategy implements Strategy {
 
       // Handle collision with competitor's head
       if (otherSnake) {
-        if (gameState.you.body.length > otherSnake.length) {
+        if (gameState.you.body.length > otherSnake.body.length) {
+          // Corrected to use body.length
           // Only allow touching the head if the snake is longer
           collisionPenalty = 0; // No penalty for eating
         } else {
           outcome = Outcome.DEAD; // Cannot move into a longer snake's head
         }
       }
-
       // Check for collision with any segment of other snakes' bodies
       const collisionWithOtherSnakeBody = gameState.board.snakes.some(
         (snake) => {
