@@ -1,10 +1,9 @@
 import { coordInDirection, isOutside } from "../functions/BoardFunctions";
 import { Direction, Outcome } from "../types/strategy";
-import { DirectionResult, Strategy } from "../types/strategyTypes";
+import { Coordinate, DirectionResult, Strategy } from "../types/strategyTypes";
 import { GameState, MoveResponse } from "../types/types";
 
 export class BasicStrategy implements Strategy {
-  // Define a health threshold
   private healthThreshold: number = 30; // Adjust this value as needed
 
   nextMove(gameState: GameState): MoveResponse {
@@ -27,11 +26,13 @@ export class BasicStrategy implements Strategy {
       });
 
       let outcome = Outcome.ALIVE;
+      let collisionPenalty = 0;
 
       if (isOutOfBounds || isSelfCollision) {
         outcome = Outcome.DEAD;
       } else if (otherSnake) {
-        // Handle head-to-head collision
+        // Avoid moving into another snake's head
+        collisionPenalty = 5; // High penalty for moving into another snake's head
         if (otherSnake.length >= gameState.you.body.length) {
           outcome = Outcome.DEAD;
         }
@@ -46,8 +47,16 @@ export class BasicStrategy implements Strategy {
       return {
         direction,
         outcome,
-        otherData: isFood ? 2 : 0, // Higher weight for food
+        otherData: isFood ? 5 : 0, // High weight for food
         healthAfterMove,
+        collisionPenalty,
+        distanceToFood: this.getClosestFoodDistance(
+          nextCoord,
+          gameState.board.food
+        ), // Add distance to food
+        canTouchHead: otherSnake
+          ? gameState.you.body.length > otherSnake.length
+          : false, // Check if can touch competitor's head
       };
     });
 
@@ -64,23 +73,40 @@ export class BasicStrategy implements Strategy {
       return { move: "down" };
     }
 
-    // Sort safe moves, prioritizing food and health
+    // Sort safe moves, prioritizing food and avoiding collisions
     const nextMove = safeMoves.sort((a, b) => {
-      // Adjust food weighting based on health threshold
       const foodWeightA =
-        health < this.healthThreshold ? a.otherData + 1 : a.otherData; // Increase weight if health is low
+        health < this.healthThreshold ? a.otherData + 3 : a.otherData; // Increased weight if health is low
       const foodWeightB =
-        health < this.healthThreshold ? b.otherData + 1 : b.otherData;
+        health < this.healthThreshold ? b.otherData + 3 : b.otherData;
+
+      // Prioritize touching head if possible
+      if (a.canTouchHead && !b.canTouchHead) return -1;
+      if (!a.canTouchHead && b.canTouchHead) return 1;
 
       // Prioritize food first
       if (foodWeightB !== foodWeightA) {
         return foodWeightB - foodWeightA;
       }
-      // Then prioritize health
-      return b.healthAfterMove - a.healthAfterMove;
+      // Apply collision penalties
+      return (
+        a.collisionPenalty - b.collisionPenalty ||
+        a.distanceToFood - b.distanceToFood
+      );
     })[0];
 
     console.log(`MOVE ${gameState.turn}: ${nextMove.direction}`);
     return { move: nextMove.direction.toLowerCase() };
+  }
+
+  // Helper function to calculate the distance to the closest food
+  private getClosestFoodDistance(
+    coord: Coordinate,
+    foodArray: Coordinate[]
+  ): number {
+    return foodArray.reduce((closest, food) => {
+      const distance = Math.abs(coord.x - food.x) + Math.abs(coord.y - food.y);
+      return distance < closest ? distance : closest;
+    }, Infinity);
   }
 }
